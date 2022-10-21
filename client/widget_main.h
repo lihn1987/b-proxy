@@ -6,7 +6,8 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class WidgetMain; }
 QT_END_NAMESPACE
-
+class AsioManager;
+class ClientServer;
 class WidgetMain : public QWidget
 {
     Q_OBJECT
@@ -16,19 +17,17 @@ public:
     ~WidgetMain();
 private:
     void InitUI();
-    void OnV2RayLog(const std::string& log);
-    void OnCommonLog(const std::string& log);
-signals:
-    void sig_v2ray_log(const std::string& log);
-    void sig_common_log(const std::string& log);
 private slots:
     void on_btn_main_connect_clicked(bool checked);
-    void DoV2RayLog(const std::string& log);
-    void DoCommonLog(const std::string& log);
-    void on_btn_export_account_clicked();
+
+    void on_pushButton_clicked();
+
+    void on_pushButton_2_clicked();
 
 private:
     Ui::WidgetMain *ui;
     Proxy proxy;
+    std::shared_ptr<AsioManager> ios_manager;
+    std::shared_ptr<ClientServer> server;
 };
 #endif // WIDGETMAIN_H

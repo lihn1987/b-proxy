@@ -134,10 +134,24 @@ border-color: red
        </layout>
       </item>
       <item>
-       <widget class="QTextBrowser" name="textBrowser"/>
+       <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
       </item>
       <item>
-       <widget class="QTextBrowser" name="txt_log_v2ray"/>
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>connect</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPlainTextEdit" name="plainTextEdit"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_2">
+        <property name="text">
+         <string>send</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
