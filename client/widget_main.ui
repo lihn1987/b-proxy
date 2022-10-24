@@ -30,12 +30,28 @@ border-color: red
 	border: 10px solid red;
 	border-color: red
 }
-
-
-
 #btn_main_connect::checked {
 	border-color: green;
 }
+#btn_main_connect::disabled {
+	border-color: gray;
+}
+
+ #btn_main_connect_2 {
+   	background-color: #ffffff;
+	border-radius: 60px;
+	border: 10px solid red;
+	border-color: red
+}
+
+#btn_main_connect_2::checked {
+	border-color: green;
+}
+
+#btn_main_connect_2::disabled {
+	border-color: gray;
+}
+
 
 </string>
      </property>
@@ -108,7 +124,7 @@ border-color: red
            </size>
           </property>
           <property name="text">
-           <string>连接</string>
+           <string>智能连接</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -130,6 +146,31 @@ border-color: red
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btn_main_connect_2">
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>120</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>120</width>
+            <height>120</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>全局连接</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

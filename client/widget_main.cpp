@@ -3,6 +3,7 @@
 #include <QDebug>
 #include "../asio_manager/asio_manager.h"
 #include "../net_lib/client_server.h"
+#include "../net_lib/websocket_server.h"
 #include "../crypto_tools/key_tools.h"
 #include "../log/log.h"
 WidgetMain::WidgetMain(QWidget *parent)
@@ -12,6 +13,7 @@ WidgetMain::WidgetMain(QWidget *parent)
     this->InitUI();
     ios_manager = GetAsioManager();
     server = std::make_shared<ClientServer>();
+    websocket_server = std::make_shared<WebsocketServer>();
 }
 
 WidgetMain::~WidgetMain(){
@@ -25,27 +27,59 @@ void WidgetMain::InitUI(){
 
 void WidgetMain::on_btn_main_connect_clicked(bool checked){
     if (checked == true) {
+        ui->btn_main_connect_2->setDisabled(true);
         ui->btn_main_connect->setText(QString::fromWCharArray(L"点击断开"));
         ProxyLocalConfig cfg;
         cfg.enable = 1;
         cfg.server = "127.0.0.1:1011";
-        // proxy.SetProxyLocalConfig(cfg);
+        proxy.SetProxyLocalConfig(cfg);
 
         ios_manager->StartThreads();
-        server->StartServer(ios_manager->GetIoService());
+        server->StartServer(ios_manager->GetIoService(), true);
+        websocket_server->StartServer(ios_manager->GetIoService(), 1012);
+
     } else {
-        ui->btn_main_connect->setText(QString::fromWCharArray(L"点击连接"));
+
         ProxyLocalConfig cfg;
         cfg.enable = 0;
         cfg.server = "127.0.0.1:1011";
         proxy.SetProxyLocalConfig(cfg);
 
         server->StopServer();
+        websocket_server->StopServer();
         ios_manager->StopThreads();
+        ui->btn_main_connect_2->setDisabled(false);
+        ui->btn_main_connect->setText(QString::fromWCharArray(L"点击连接"));
     }
 }
 
+void WidgetMain::on_btn_main_connect_2_clicked(bool checked){
+    if (checked == true) {
+        ui->btn_main_connect->setDisabled(true);
+        ui->btn_main_connect->setText(QString::fromWCharArray(L"点击断开"));
+        ProxyLocalConfig cfg;
+        cfg.enable = 1;
+        cfg.server = "127.0.0.1:1011";
+        proxy.SetProxyLocalConfig(cfg);
 
+        ios_manager->StartThreads();
+        server->StartServer(ios_manager->GetIoService(), false);
+        websocket_server->StartServer(ios_manager->GetIoService(), 1012);
+
+    } else {
+
+        ProxyLocalConfig cfg;
+        cfg.enable = 0;
+        cfg.server = "127.0.0.1:1011";
+        proxy.SetProxyLocalConfig(cfg);
+
+        server->StopServer();
+        websocket_server->StopServer();
+        ios_manager->StopThreads();
+        ui->btn_main_connect->setDisabled(false);
+        ui->btn_main_connect->setText(QString::fromWCharArray(L"点击连接"));
+    }
+}
 
 void WidgetMain::on_pushButton_clicked()
 {
@@ -69,4 +103,7 @@ void WidgetMain::on_pushButton_2_clicked()
 //    auto for_send_str = std::string(for_send.data(),for_send.length());
 //    client->Write(for_send_str);
 }
+
+
+
 

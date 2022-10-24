@@ -19,6 +19,8 @@ SOURCES += \
     ../log/log.cpp \
     ../net_lib/client_server.cpp \
     ../net_lib/client_socket_item.cpp \
+    ../net_lib/server_socket_item.cpp \
+    ../net_lib/websocket_server.cpp \
     config.cpp \
     main.cpp \
     proxy.cpp \
@@ -82,6 +84,9 @@ HEADERS += \
     ../log/log.h \
     ../net_lib/client_server.h \
     ../net_lib/client_socket_item.h \
+    ../net_lib/pac.h \
+    ../net_lib/server_socket_item.h \
+    ../net_lib/websocket_server.h \
     config.h \
     proxy.h \
     widget_main.h

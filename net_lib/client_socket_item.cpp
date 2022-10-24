@@ -3,15 +3,20 @@
 #include <boost/format.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast.hpp>
+#include <boost/algorithm/string.hpp>
 #include "../asio_manager/asio_manager.h"
 #include "../crypto_tools/key_tools.h"
 #include "../log/log.h"
+#include "./pac.h"
 const uint32_t BUFFER_SIZE = 1024;
-ClientSocketItem::ClientSocketItem(std::shared_ptr<boost::asio::ip::tcp::socket> socket):socket(socket){
+ClientSocketItem::ClientSocketItem(std::shared_ptr<boost::asio::ip::tcp::socket> socket, bool auto_proxy):socket(socket){
     read_buf.resize(1024);
     websocket = std::shared_ptr<boost::beast::websocket::stream<boost::asio::ip::tcp::socket>>(
                new boost::beast::websocket::stream<boost::asio::ip::tcp::socket>(GetAsioManager()->GetIoService()));
-    socket_thread_func = std::thread(std::bind(&ClientSocketItem::SocketThreadFunc, this, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 9922), "/test"));
+    socket_thread_func = std::thread(
+                std::bind(
+                    &ClientSocketItem::SocketThreadFunc,
+                    this, "/test", auto_proxy));
 
 }
 
@@ -47,11 +52,54 @@ void ClientSocketItem::Clear(){
     }
 }
 
-void ClientSocketItem::SocketThreadFunc(const boost::asio::ip::tcp::endpoint &end_point, const std::string &path){
+void ClientSocketItem::SocketThreadFunc(const std::string &path, bool auto_proxy){
     try{
+        //读取第一条消息
+        bool direct = true;
+        while(auto_proxy) {
+            uint32_t size = socket->read_some(boost::asio::buffer(read_buf, read_buf.size()));
+            readed += std::string_view(read_buf.data(), size);
+            std::size_t pos = readed.find("\r\n\r\n");
+            if (pos != -1) {
+                //判断域名是不是在pac中
+                std::vector<std::string> str_list;
+                boost::split(str_list, readed, boost::is_any_of("\r\n"), boost::token_compress_on);
+                if(str_list.size() < 1) throw "";
+                std::string line1 = str_list[0];
+                boost::split(str_list, line1, boost::is_any_of(" "), boost::token_compress_on);
+                if (str_list.size() < 2) throw "";
+
+                std::string cmd = str_list[0];
+                std::string target = str_list[1];
+
+                pos = target.find("//");
+                if (pos != -1) {
+                    target = std::string(target, pos+2, target.length() - pos - 2);
+                }
+                boost::erase_last(target, "/");
+                boost::split(str_list, target, boost::is_any_of(":"));
+                std::string host = str_list[0];
+                std::vector<std::string> host_list;
+                boost::split(host_list, host, boost::is_any_of("."));
+                uint32_t host_list_size = host_list.size();
+                if (host_list_size < 2)
+                    throw "";
+                host = host_list[host_list_size-2]+"."+host_list[host_list_size-1];
+                if(pac_list.find(host) != pac_list.end()){
+                    direct = false;
+                }
+                break;
+            }
+        }
         // 建立websocket通道
+        boost::asio::ip::tcp::endpoint end_point;
+        if (direct) {
+            end_point = {boost::asio::ip::make_address("127.0.0.1"), 1012};
+        }else{
+            end_point = {boost::asio::ip::make_address("34.80.64.133"), 80};
+        }
         websocket->next_layer().connect(end_point);
-        std::string host = end_point.address().to_string() + (boost::format("/%d")%end_point.port()).str();
+        std::string host = end_point.address().to_string() + (boost::format(":%d")%end_point.port()).str();
         websocket->set_option(boost::beast::websocket::stream_base::decorator([](boost::beast::websocket::request_type&req){
             req.set(boost::beast::http::field::user_agent, std::string(BOOST_BEAST_VERSION_STRING)+" websocket-client-coro");
         }));
@@ -60,13 +108,18 @@ void ClientSocketItem::SocketThreadFunc(const boost::asio::ip::tcp::endpoint &en
         websocket->binary(true);
         websocket_thread_func = std::thread(std::bind(&ClientSocketItem::WebSocketThreadFunc, shared_from_this()));
 
-        //进入消息读取循环
+        // ================
+        // 进入消息读取循环
+
+        //先把http头发出去
+        WebSocketWrite(readed);
+        readed.clear();
         while(true) {
             uint32_t size = socket->read_some(boost::asio::buffer(read_buf, read_buf.size()));
-            readed += std::string_view(read_buf.data(), size);
-            GetProxyLog()->LogDebug(std::string(read_buf.data(), size));
-            WebSocketWrite(readed);
-            readed.clear();
+            //readed += std::string_view(read_buf.data(), size);
+            //GetProxyLog()->LogDebug(std::string(read_buf.data(), size));
+            WebSocketWrite(std::string(read_buf.data(), size));
+            //readed.clear();
         }
     }catch(...) {
         SendError(shared_from_this());

@@ -14,11 +14,11 @@ public:
     ClientServer();
     ~ClientServer();
 public:
-    bool StartServer(boost::asio::io_service& ios, uint32_t port = 1011);
+    bool StartServer(boost::asio::io_service& ios, bool auto_proxy, uint32_t port = 1011);
     bool StopServer();
 private:
     std::thread thread_func;
-    void ThreadFunc(boost::asio::io_service* ios, uint32_t port);
+    void ThreadFunc(boost::asio::io_service* ios, bool auto_proxy, uint32_t port);
     void OnError(std::shared_ptr<ClientSocketItem> item);
 private:
     std::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor;

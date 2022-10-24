@@ -120,19 +120,24 @@ bool ServerSocketItem::WebsocketWrite(const std::string& buf) {
 
 void ServerSocketItem::Clear(){
     std::lock_guard<std::mutex> lk(mutex);
+    boost::system::error_code err;
+    if(socket) {
+        socket->cancel(err);
+        socket->close(err);
+
+    }
+    if (socket_thread_func.joinable()) {
+        socket_thread_func.join();
+    }
+
     if(websocket){
-        websocket->next_layer().close();
+        websocket->next_layer().close(err);
     }
     if (websocket_thread_func.joinable()) {
         websocket_thread_func.join();
     }
 
-    if(socket) {
-        socket->close();
-    }
-    if (socket_thread_func.joinable()) {
-        socket_thread_func.join();
-    }
+
 }
 
 void ServerSocketItem::SetOnErrorCallback(std::function<void(std::shared_ptr<ServerSocketItem>)> cb){
@@ -229,7 +234,8 @@ void ServerSocketItem::Decode() {
             port = "80";
         boost::asio::ip::tcp::resolver resolver(GetAsioManager()->GetIoService());
         auto result = resolver.resolve(host, port);
-        boost::asio::connect(*socket, result);
+//        boost::asio::connect(*socket, result);
+        socket->connect(result->endpoint());
         
         if (cmd == "CONNECT"){
             //https代理

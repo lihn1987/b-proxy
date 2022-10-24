@@ -1,4 +1,4 @@
-#include <memory>
+﻿#include <memory>
 #include <boost/beast/websocket.hpp>
 #include <boost/asio.hpp>
 #include <list>
@@ -9,7 +9,7 @@ public:
     WebsocketServer();
     ~WebsocketServer();
 public:
-    bool StartServer(boost::asio::io_service& ios, uint32_t port = 9922, const std::string& path = "/test");
+    bool StartServer(boost::asio::io_service& ios, uint16_t port = 9922, const std::string& path = "/test");
     bool StopServer();
 private:
     void ThreadFunc();

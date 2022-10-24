@@ -12,8 +12,8 @@ ClientServer::~ClientServer(){
     StopServer();
 }
 
-bool ClientServer::StartServer(boost::asio::io_service& ios, uint32_t port){
-    thread_func = std::thread(std::bind(&ClientServer::ThreadFunc, this, &ios, port));
+bool ClientServer::StartServer(boost::asio::io_service& ios, bool auto_proxy, uint32_t port){
+    thread_func = std::thread(std::bind(&ClientServer::ThreadFunc, this, &ios, auto_proxy, port));
     return true;
 }
 
@@ -31,13 +31,13 @@ bool ClientServer::StopServer(){
     return true;
 }
 
-void ClientServer::ThreadFunc(boost::asio::io_service* ios, uint32_t port){
+void ClientServer::ThreadFunc(boost::asio::io_service* ios, bool auto_proxy, uint32_t port){
     try {
         acceptor = std::make_shared<boost::asio::ip::tcp::acceptor>(*ios, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port));
         GetProxyLog()->LogDebug("clietn_server is listening...");
         while(true){
             std::shared_ptr<boost::asio::ip::tcp::socket> socket = std::make_shared<boost::asio::ip::tcp::socket>(acceptor->accept());
-            std::shared_ptr<ClientSocketItem> client = std::shared_ptr<ClientSocketItem>(new ClientSocketItem(socket));
+            std::shared_ptr<ClientSocketItem> client = std::shared_ptr<ClientSocketItem>(new ClientSocketItem(socket, auto_proxy));
             client->SetOnErrorCallBack(std::bind(&ClientServer::OnError, this, std::placeholders::_1));
             std::lock_guard<std::mutex> lk(socket_list_mutex);
             socket_list.insert(client);

@@ -1,4 +1,4 @@
-#include "websocket_server.h"
+﻿#include "websocket_server.h"
 #include "server_socket_item.h"
 #include "../log/log.h"
 namespace websocket = boost::beast::websocket;
@@ -10,7 +10,7 @@ WebsocketServer::~WebsocketServer(){
     StopServer();
 }
 
-bool WebsocketServer::StartServer(boost::asio::io_service& ios, uint32_t port, const std::string& path){
+bool WebsocketServer::StartServer(boost::asio::io_service& ios, uint16_t port, const std::string& path){
     try{
         this->path = path;
         acceptor = std::shared_ptr<boost::asio::ip::tcp::acceptor>(
@@ -30,25 +30,37 @@ bool WebsocketServer::StopServer(){
         }catch(...){
             return false;
         }
+        if (thread_func.joinable()){
+            thread_func.join();
+        }
+        std::lock_guard<std::mutex> lk(websocket_map_mutex);
+        for (auto item: websocket_map) {
+            item->Clear();
+        }
+        websocket_map.clear();
     }
     return true;
 }
 
 void WebsocketServer::ThreadFunc(){
-    while(true) {
-        boost::asio::ip::tcp::socket socket =  acceptor->accept();
-        auto ws = std::shared_ptr<websocket::stream<boost::asio::ip::tcp::socket>>(new websocket::stream<boost::asio::ip::tcp::socket>(std::move(socket)));
-        ws->set_option(websocket::stream_base::decorator([](websocket::request_type& res){
-            res.set(boost::beast::http::field::server, std::string(BOOST_BEAST_VERSION_STRING) + " websocket-server-sync");
-        }));
-        GetProxyLog()->LogDebug("收到新连接");
-        std::shared_ptr<ServerSocketItem> client = std::make_shared<ServerSocketItem>();
-        client->SetOnErrorCallback(std::bind(&WebsocketServer::OnClientError, this, std::placeholders::_1));
-        client->StartWithAccept(ws, path);
-        {
-            std::lock_guard<std::mutex> lk(websocket_map_mutex);
-            websocket_map.insert(client);
+    try{
+        while(true) {
+            boost::asio::ip::tcp::socket socket =  acceptor->accept();
+            auto ws = std::shared_ptr<websocket::stream<boost::asio::ip::tcp::socket>>(new websocket::stream<boost::asio::ip::tcp::socket>(std::move(socket)));
+            ws->set_option(websocket::stream_base::decorator([](websocket::request_type& res){
+                res.set(boost::beast::http::field::server, std::string(BOOST_BEAST_VERSION_STRING) + " websocket-server-sync");
+            }));
+            GetProxyLog()->LogDebug("收到新连接");
+            std::shared_ptr<ServerSocketItem> client = std::make_shared<ServerSocketItem>();
+            client->SetOnErrorCallback(std::bind(&WebsocketServer::OnClientError, this, std::placeholders::_1));
+            client->StartWithAccept(ws, path);
+            {
+                std::lock_guard<std::mutex> lk(websocket_map_mutex);
+                websocket_map.insert(client);
+            }
         }
+    }catch(...){
+        GetProxyLog()->LogDebug("websocket server is break...");
     }
 }
 

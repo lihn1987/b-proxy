@@ -17,13 +17,13 @@ class WebSocketClient;
 class ClientSocketItem: public std::enable_shared_from_this<ClientSocketItem>
 {
 public:
-    ClientSocketItem(std::shared_ptr<boost::asio::ip::tcp::socket> socket);
+    ClientSocketItem(std::shared_ptr<boost::asio::ip::tcp::socket> socket, bool auto_proxy);
     ~ClientSocketItem();
     void SetOnErrorCallBack(std::function<void(std::shared_ptr<ClientSocketItem>)> cb);
     void SendError(std::shared_ptr<ClientSocketItem> client);
     void Clear();
 private:
-    void SocketThreadFunc(const boost::asio::ip::tcp::endpoint &end_point, const std::string &path);
+    void SocketThreadFunc(const std::string &path, bool auto_proxy);
     void WebSocketThreadFunc();
     void SocketWrite(const std::string& buf);
     void WebSocketWrite(const std::string& buf);
