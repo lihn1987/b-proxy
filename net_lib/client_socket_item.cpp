@@ -55,7 +55,7 @@ void ClientSocketItem::Clear(){
 void ClientSocketItem::SocketThreadFunc(const std::string &path, bool auto_proxy){
     try{
         //读取第一条消息
-        bool direct = true;
+        bool direct = false;
         while(auto_proxy) {
             uint32_t size = socket->read_some(boost::asio::buffer(read_buf, read_buf.size()));
             readed += std::string_view(read_buf.data(), size);
@@ -72,11 +72,14 @@ void ClientSocketItem::SocketThreadFunc(const std::string &path, bool auto_proxy
                 std::string cmd = str_list[0];
                 std::string target = str_list[1];
 
-                pos = target.find("//");
+                boost::erase_first(target, "http://");
+                boost::erase_first(target, "https://");
+                boost::erase_first(target, "ws://");
+                boost::erase_first(target, "wss://");
+                pos = target.find("/");
                 if (pos != -1) {
-                    target = std::string(target, pos+2, target.length() - pos - 2);
+                    target = std::string(target, 0, pos);
                 }
-                boost::erase_last(target, "/");
                 boost::split(str_list, target, boost::is_any_of(":"));
                 std::string host = str_list[0];
                 std::vector<std::string> host_list;
@@ -85,8 +88,8 @@ void ClientSocketItem::SocketThreadFunc(const std::string &path, bool auto_proxy
                 if (host_list_size < 2)
                     throw "";
                 host = host_list[host_list_size-2]+"."+host_list[host_list_size-1];
-                if(pac_list.find(host) != pac_list.end()){
-                    direct = false;
+                if(pac_list.find(host) == pac_list.end()){
+                    direct = true;
                 }
                 break;
             }

@@ -32,7 +32,7 @@ void WidgetMain::on_btn_main_connect_clicked(bool checked){
         ProxyLocalConfig cfg;
         cfg.enable = 1;
         cfg.server = "127.0.0.1:1011";
-        proxy.SetProxyLocalConfig(cfg);
+//        proxy.SetProxyLocalConfig(cfg);
 
         ios_manager->StartThreads();
         server->StartServer(ios_manager->GetIoService(), true);

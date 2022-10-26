@@ -218,12 +218,14 @@ void ServerSocketItem::Decode() {
 
         std::string cmd = str_list[0];
         std::string target = str_list[1];
-        
-        pos = target.find("//");
+        boost::erase_last(target, "http://");
+        boost::erase_last(target, "https://");
+        boost::erase_last(target, "ws://");
+        boost::erase_last(target, "wss://");
+        pos = target.find("/");
         if (pos != -1) {
-            target = std::string(target, pos+2, target.length() - pos - 2);
+            target = std::string(target, 0, pos);
         }
-        boost::erase_last(target, "/");
         boost::split(str_list, target, boost::is_any_of(":"));
         std::string host = str_list[0];
         std::string port;
